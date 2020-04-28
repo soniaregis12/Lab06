@@ -53,7 +53,7 @@ public class Model {
 	
 	public void ricorsiva(List<Citta> parziale, int livello) {
 		
-		if(livello == NUMERO_GIORNI_TOTALI ) {
+		if(livello == NUMERO_GIORNI_TOTALI) {
 			// Ci troviamo nel caso terminale
 			Double costo = calcoloCosto(parziale);
 			if(best == null || calcoloCosto(best) > costo) {
