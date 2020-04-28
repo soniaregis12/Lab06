@@ -87,7 +87,7 @@ public class Model {
 		if(parziale.size() == 0) {
 			return true;
 		}
-		if(parziale.size() == 1 || parziale.size() == 2 || parziale.size() == 3) {
+		if(parziale.size() == 1 || parziale.size() == 2) {
 			return parziale.get(parziale.size()-1).equals(prova);
 		}
 		
