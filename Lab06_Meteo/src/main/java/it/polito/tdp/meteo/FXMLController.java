@@ -5,8 +5,10 @@
 package it.polito.tdp.meteo;
 
 import java.net.URL;
+import java.util.List;
 import java.util.ResourceBundle;
 
+import it.polito.tdp.meteo.model.Citta;
 import it.polito.tdp.meteo.model.Model;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -41,7 +43,9 @@ public class FXMLController {
 
     @FXML
     void doCalcolaSequenza(ActionEvent event) {
-
+    	txtResult.clear();
+    	List<Citta> sequenzaMigliore = model.trovaSequenza(Integer.parseInt(boxMese.getValue()));
+    	txtResult.setText("Sequenza ottima per il mese selezionato:\n" + sequenzaMigliore.toString());
     }
 
     @FXML

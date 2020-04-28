@@ -1,5 +1,6 @@
 package it.polito.tdp.meteo.model;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -13,144 +14,106 @@ public class Model {
 	private final static int NUMERO_GIORNI_TOTALI = 15;
 	
 	private MeteoDAO md;
-	private List<Rilevamento> rilevamenti;
 	
-	private int costoMinimo;
-	private String soluzioneBest = "";
-	
+	private double costoMinimo;
+	private List<Citta> leCitta;
+	private List<Citta> best;
 
 	public Model() {
 		md = new MeteoDAO();
-		rilevamenti = null;
+		this.leCitta = md.getAllCitta();
 	}
 
 	
 	public String getUmiditaMedia(int mese) {
 		
 		String pippo = "";
-		int contatore = 0;
-		int somma = 0;
-		
-		List<Rilevamento> rilevamentiMilano = md.getAllRilevamentiLocalitaMese(mese, "Milano");
-		List<Rilevamento> rilevamentiGenova = md.getAllRilevamentiLocalitaMese(mese, "Genova");
-		List<Rilevamento> rilevamentiTorino = md.getAllRilevamentiLocalitaMese(mese, "Torino");
-		
-		for(Rilevamento r : rilevamentiMilano) {
-			contatore++;
-			somma += r.getUmidita();
+		double umidita;
+	
+		for(Citta c : leCitta) {
+			umidita = md.getUmiditaMedia(c.getNome(), mese);
+			pippo += "Umidità media " + c + ": " + umidita + "\n";
 		}
-		pippo = "Umidità media Milano: " + somma/contatore + "\n";
-		
-		contatore = 0;
-		somma = 0;
-		
-		for(Rilevamento r : rilevamentiGenova) {			
-			contatore++;
-			somma += r.getUmidita();
-		}
-		pippo += "Umidità media Genova: " + somma/contatore + "\n";
-		
-		contatore = 0;
-		somma = 0;
-		
-		for(Rilevamento r : rilevamentiTorino) {		
-			contatore++;
-			somma += r.getUmidita();
-		}
-		pippo += "Umidità media Torino: " + somma/contatore;
-		
 		return pippo;
 	}
 	
 	
-	public String trovaSequenza(int mese) {
+	public List<Citta> trovaSequenza(int mese) {
 		
-		this.rilevamenti = md.getAllRilevamentiPrimaQuindicina(mese);
+		List<Citta> parziale = new ArrayList<Citta>();
+		this.best = new ArrayList<Citta>();
 		
-		return "TODO!";
+		for(Citta c : leCitta) {
+			c.setRilevamenti(md.getAllRilevamentiLocalitaMese(mese, c.getNome()));
+		}
+		ricorsiva(parziale, 0);
+		
+		return this.best;
 	}
 	
-	public void ricorsiva(Set<Rilevamento> parziale, int livello) {
+	public void ricorsiva(List<Citta> parziale, int livello) {
 		
-		int costo = calcoloCosto(parziale);
-		
-		if(costo >= costoMinimo) {	//Non potrò mai avere una soluzione migliore, quindi finisco
-			return;
-		}
-		
-		if(parziale.size() == NUMERO_GIORNI_TOTALI ) {
-			// Ci troviamo nel caso terminale, dobbiamo vedere se la soluzione rispetta i parametri
-			
-			if(giorniMaxNonSuperati(parziale) && giorniMinimiFatti(parziale)) {
-				for(Rilevamento r : parziale) {
-					this.soluzioneBest += r.getLocalita() + "\n"; 
+		if(livello == NUMERO_GIORNI_TOTALI ) {
+			// Ci troviamo nel caso terminale
+			Double costo = calcoloCosto(parziale);
+			if(best == null || costoMinimo > costo) {
+				this.costoMinimo = costo;
+				this.best = new ArrayList<Citta>(parziale);
+			}
+		}else {
+			for(Citta prova : leCitta) {
+				if(aggiuntavalida(parziale, prova)) {
+					parziale.add(prova);
+					ricorsiva(parziale, livello+1);
+					parziale.remove(parziale.size()-1);	
 				}
 			}
 		}
-		// In tutti gli altri casi io devo aggiungere una possibilità, o non aggiungerla e andare a perlustrare tutti i sotto-casi
-		// Se non ho superato i giorni massimi posso mettere quello di prima
 		
-		// Se ho fatto i giorni minimi posso cambiare città
 	}
 
 
-	private boolean giorniMinimiFatti(Set<Rilevamento> parziale) {
-		
-		String precedente = "";
-		int contatore = 0;
-		
-		for(Rilevamento r : parziale) {
-			if(precedente == "") {
-				contatore++;
-			}
-			if(r.getLocalita().equals(precedente)) {
-				contatore++;
-			}
-			if(contatore < NUMERO_GIORNI_CITTA_CONSECUTIVI_MIN && (!r.getLocalita().equals(precedente) || precedente != "")) {
-				return false;
-			}
-			if(contatore >= NUMERO_GIORNI_CITTA_CONSECUTIVI_MIN && !r.getLocalita().equals(precedente)) {
-				contatore = 1;
-			}
-			precedente = r.getLocalita();
-		}
-		return true;
-	}
-
-
-	private boolean giorniMaxNonSuperati(Set<Rilevamento> parziale) {
-		
-		int contatoreMilano = 0;
-		int contatoreGenova = 0;
-		int contatoreTorino = 0;
-		
-		for(Rilevamento r : parziale) {
-			if(r.getLocalita().equals("Milano")) {
-				contatoreMilano++;
-			}
-			if(r.getLocalita().equals("Genova")) {
-				contatoreGenova++;
-			}
-			if(r.getLocalita().equals("Torino")) {
-				contatoreTorino++;
+	private boolean aggiuntavalida(List<Citta> parziale, Citta prova) {
+		int contatoreCitta = 1;
+		for(Citta c : parziale) {
+			if(c.equals(prova)) {
+				contatoreCitta++;
 			}
 		}
-		return contatoreGenova <= NUMERO_GIORNI_CITTA_MAX && contatoreMilano <= NUMERO_GIORNI_CITTA_MAX && contatoreTorino <= NUMERO_GIORNI_CITTA_MAX;
-	}
-
-
-	private int calcoloCosto(Set<Rilevamento> parziale) {
+		if(contatoreCitta > NUMERO_GIORNI_CITTA_MAX) {
+			return false;
+		}
 		
-		int pippo = 0;
-		String localitaPrecedente = "";
+		if(parziale.size() == 0) {
+			return true;
+		}
+		if(parziale.size() == 1 || parziale.size() == 2 || parziale.size() == 3) {
+			return parziale.get(parziale.size()-1).equals(prova);
+		}
 		
-		for(Rilevamento r : parziale) {
+		if (parziale.get(parziale.size()-1).equals(prova))
+			return true; 
+		
+		if (parziale.get(parziale.size()-1).equals(parziale.get(parziale.size()-2)) 
+		&& parziale.get(parziale.size()-2).equals(parziale.get(parziale.size()-3)))
+			return true;
 			
-			if( localitaPrecedente != "" && !r.getLocalita().equals(localitaPrecedente)) {
+		return false;
+	}
+
+	private Double calcoloCosto(List<Citta> parziale) {
+		
+		Double pippo = 0.0;
+	
+		for(int giorno=0; giorno < NUMERO_GIORNI_TOTALI; giorno++) {
+			Citta c = parziale.get(giorno);
+			double umidita = c.getRilevamenti().get(giorno).getUmidita();
+			pippo += umidita;
+		}
+		for(int giorno=1; giorno<NUMERO_GIORNI_TOTALI; giorno++) {
+			if(!parziale.get(giorno).equals(parziale.get(giorno-1))) {
 				pippo += COST;
 			}
-			pippo += r.getUmidita();
-			localitaPrecedente = r.getLocalita();
 		}
 		return pippo;
 	}

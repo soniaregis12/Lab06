@@ -7,20 +7,21 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import it.polito.tdp.meteo.model.Citta;
 import it.polito.tdp.meteo.model.Rilevamento;
 
 public class MeteoDAO {
 	
-	public List<Rilevamento> getAllRilevamentiPrimaQuindicina(int mese) {
+	public List<Rilevamento> getAllRilevamenti() {
 
-		final String sql = "SELECT Localita, Data, Umidita FROM situazione where MONTH(Data) =? and DAY(DATA) <= 15 and DAY(DATA) >= 1 ORDER BY data ASC";
+		final String sql = "SELECT Localita, Data, Umidita FROM situazione ORDER BY data ASC";
 
 		List<Rilevamento> rilevamenti = new ArrayList<Rilevamento>();
 
 		try {
 			Connection conn = ConnectDB.getConnection();
 			PreparedStatement st = conn.prepareStatement(sql);
-			st.setInt(1, mese);
+
 			ResultSet rs = st.executeQuery();
 
 			while (rs.next()) {
@@ -38,10 +39,37 @@ public class MeteoDAO {
 			throw new RuntimeException(e);
 		}
 	}
+	
+	public List<Citta> getAllCitta() {
+
+		final String sql = "SELECT DISTINCT localita FROM situazione ORDER BY localita";
+
+		List<Citta> citta = new ArrayList<Citta>();
+
+		try {
+			Connection conn = ConnectDB.getConnection();
+			PreparedStatement st = conn.prepareStatement(sql);
+			ResultSet rs = st.executeQuery();
+
+			while (rs.next()) {
+
+				Citta c = new Citta(rs.getString("localita"));
+				citta.add(c);
+			}
+
+			conn.close();
+			return citta;
+
+		} catch (SQLException e) {
+
+			e.printStackTrace();
+			throw new RuntimeException(e);
+		}
+	}
 
 	public List<Rilevamento> getAllRilevamentiLocalitaMese(int mese, String localita) {
 
-		final String sql = "SELECT Localita, Data, Umidita FROM situazione WHERE MONTH(DATA) = ? AND Localita =?";
+		final String sql = "SELECT Localita, Data, Umidita FROM situazione WHERE MONTH(DATA) = ? AND Localita =? ORDER BY data ASC";
 
 		List<Rilevamento> rilevamentiMeseLocalita = new ArrayList<Rilevamento>();
 
@@ -60,6 +88,31 @@ public class MeteoDAO {
 
 			conn.close();
 			return rilevamentiMeseLocalita;
+
+		} catch (SQLException e) {
+
+			e.printStackTrace();
+			throw new RuntimeException(e);
+		}
+	}
+	
+	public double getUmiditaMedia(String citta, int mese) {
+		final String sql = "SELECT AVG(Umidita) AS U FROM situazione WHERE localita =? AND MONTH(DATA) = ?";
+
+		double umiditaMedia;
+
+		try {
+			Connection conn = ConnectDB.getConnection();
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setString(1, citta);
+			st.setInt(2, mese);
+			ResultSet rs = st.executeQuery();
+
+			rs.next();			
+			umiditaMedia = rs.getDouble("U");
+
+			conn.close();
+			return umiditaMedia;
 
 		} catch (SQLException e) {
 
