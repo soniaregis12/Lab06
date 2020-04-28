@@ -56,10 +56,11 @@ public class Model {
 		if(livello == NUMERO_GIORNI_TOTALI ) {
 			// Ci troviamo nel caso terminale
 			Double costo = calcoloCosto(parziale);
-			if(best == null || costoMinimo > costo) {
-				this.costoMinimo = costo;
+			if(best == null || calcoloCosto(best) > costo) {
 				this.best = new ArrayList<Citta>(parziale);
 			}
+			//System.out.println(parziale);
+			System.out.println(this.best);
 		}else {
 			for(Citta prova : leCitta) {
 				if(aggiuntavalida(parziale, prova)) {
